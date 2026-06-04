@@ -13,9 +13,14 @@ To ensure stability and ease of testing, the application supports four powerful 
 
 ---
 
-## Model
+## Model & Engines
 
+### NVIDIA Cosmos3-Super-Text2Image
 Model: [nvidia/Cosmos3-Super-Text2Image](https://huggingface.co/nvidia/Cosmos3-Super-Text2Image)
+
+### Puter.js (推薦展示使用)
+由於絕大部分的免費 API (如 Hugging Face Serverless 等) 經常流量過載或無法成功產圖，本專案特別加入了 **Puter.js (Stable Diffusion)** 選項，以方便進行作業功能的完整展示。
+* **使用說明**：在瀏覽器中首次使用 Puter.js 進行生圖時，會彈出 Puter 的登入視窗，此時需要按照提示使用 Google 帳號登入 Puter 帳戶，即可取得免費生圖額度並成功產圖。
 
 ---
 
@@ -87,5 +92,7 @@ Streamlit Community Cloud is the easiest way to deploy and share your app:
 
 Below is the directory structure for project screenshots.
 
-- **App Home Screen**: `screenshots/app_home.png`
-- **Generated Result**: `screenshots/generated_result.png`
+- **App Home Screen**: `screenshots/IMG_6598.PNG` & `screenshots/IMG_6599.PNG`
+- **Generated Result**: `screenshots/IMG_6597.PNG`
+- **Desktop Preview**: `screenshots/2026-06-04 201852.png`
+
