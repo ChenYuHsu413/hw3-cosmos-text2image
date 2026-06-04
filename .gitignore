@@ -8,3 +8,7 @@ __pycache__/
 !screenshots/*.png
 !screenshots/*.jpg
 !screenshots/*.jpeg
+!screenshots/*.PNG
+!screenshots/*.JPG
+!screenshots/*.JPEG
+

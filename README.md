@@ -90,9 +90,20 @@ Streamlit Community Cloud is the easiest way to deploy and share your app:
 
 ## Screenshots
 
-Below is the directory structure for project screenshots.
+以下為本專案的應用程式畫面截圖：
 
-- **App Home Screen**: `screenshots/IMG_6598.PNG` & `screenshots/IMG_6599.PNG`
-- **Generated Result**: `screenshots/IMG_6597.PNG`
-- **Desktop Preview**: `screenshots/2026-06-04 201852.png`
+- **App Home Screen (手機版首頁)**:
+  
+  ![App Home 1](screenshots/IMG_6598.PNG)
+  
+  ![App Home 2](screenshots/IMG_6599.PNG)
+
+- **Generated Result (生成結果)**:
+  
+  ![Generated Result](screenshots/IMG_6597.PNG)
+
+- **Desktop Preview (電腦版預覽)**:
+  
+  ![Desktop Preview](screenshots/2026-06-04%20201852.png)
+
 
