@@ -79,7 +79,7 @@ Streamlit Community Cloud is the easiest way to deploy and share your app:
 ## Links
 
 - **GitHub Repository**: [https://github.com/ChenYuHsu413/hw3-cosmos-text2image](https://github.com/ChenYuHsu413/hw3-cosmos-text2image)
-- **Live Streamlit Demo**: [https://hw3-cosmos-text2image.streamlit.app](https://hw3-cosmos-text2image.streamlit.app) *(Please update this link after deployment)*
+- **Live Streamlit Demo**: [https://chenyu-hw3-cosmos-text2image.streamlit.app/](https://chenyu-hw3-cosmos-text2image.streamlit.app/)
 
 ---
 
