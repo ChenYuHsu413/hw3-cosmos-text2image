@@ -1,0 +1,10 @@
+.env
+.streamlit/secrets.toml
+__pycache__/
+*.png
+*.jpg
+*.jpeg
+*.webp
+!screenshots/*.png
+!screenshots/*.jpg
+!screenshots/*.jpeg
