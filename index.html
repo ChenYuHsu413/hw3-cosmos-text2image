@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI生圖工作室 (AI Image Studio) - 旗艦多引擎版</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Puter.js CDN (For Free Stability AI Engine) -->
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Microsoft JhengHei', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f5f7ff',
+                            100: '#ebf0ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Transparent grid background */
+        .grid-bg {
+            background-size: 20px 20px;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        }
+        .dark .grid-bg {
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-screen transition-colors duration-300">
+
+    <!-- Navigation Bar -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/85 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-palette text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent flex items-center">
+                        AI生圖工作室 
+                        <span class="ml-2 px-2 py-0.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs rounded-full border border-indigo-500/20 font-semibold">旗艦多引擎版</span>
+                    </h1>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Theme Toggle -->
+                <button id="themeToggleBtn" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400">
+                    <i id="themeIcon" class="fa-solid fa-moon"></i>
+                </button>
+                <span id="apiStatusBadge" class="hidden sm:inline-flex text-xs px-2.5 py-1 bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400 rounded-full font-medium items-center">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1.5"></span>
+                    系統連線正常
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Panel: Configurations (lg:col-span-5) -->
+            <section class="lg:col-span-5 space-y-6">
+                
+                <!-- Prompt input area -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center">
+                        <label for="promptInput" class="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            輸入您的創意提示詞 (Prompt)：
+                        </label>
+                        <span id="promptLength" class="text-xs text-slate-400">0 / 500</span>
+                    </div>
+                    
+                    <textarea id="promptInput" rows="4" 
+                        class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm outline-none resize-none placeholder-slate-400"
+                        placeholder="例如：一隻戴著黃冠的金色柴犬坐在草地上，數位插畫風格，溫暖的光線，極致細節。"></textarea>
+
+                    <!-- Fast Suggestion Templates -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        <span class="text-xs text-slate-400 self-center">快速範本：</span>
+                        <button onclick="useTemplate('Cyberpunk street, neon signs, wet asphalt, highly detailed, photorealistic')" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 rounded-md transition-colors">賽博朋克</button>
+                        <button onclick="useTemplate('A beautiful Japanese garden with cherry blossoms, traditional temple in the background, anime watercolor style')" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 rounded-md transition-colors">日系水彩</button>
+                        <button onclick="useTemplate('A cute chubby hamster wearing an astronaut helmet on the moon, holding a cheese, 3d render, clay style')" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 px-2 py-1 rounded-md transition-colors">可愛 3D</button>
+                    </div>
+
+                    <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:shadow-none transition-all flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>開始生成 (Generate)</span>
+                    </button>
+                </div>
+
+                <!-- Multi-Engine Choice Selector -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex items-center space-x-2 pb-2 border-b border-slate-100 dark:border-slate-700/50">
+                        <span class="bg-blue-50 dark:bg-slate-900 text-blue-500 p-1.5 rounded-lg">
+                            <i class="fa-solid fa-server"></i>
+                        </span>
+                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">選擇免費用生圖引擎</h3>
+                    </div>
+
+                    <div class="space-y-3">
+                        <!-- Option 1: Gemini 2.5 Flash Image -->
+                        <label class="relative flex p-3.5 rounded-xl border border-blue-500 bg-blue-50/20 dark:bg-blue-950/20 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-850" id="label-gemini">
+                            <div class="flex items-start h-5">
+                                <input id="engine-gemini" name="image-engine" type="radio" checked value="gemini" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 dark:border-slate-700 mt-1">
+                            </div>
+                            <div class="ml-3 text-xs">
+                                <span class="font-bold text-slate-800 dark:text-slate-100 block">
+                                    Gemini 2.5 官方引擎 (極速、最穩定)
+                                </span>
+                                <span class="text-slate-500 dark:text-slate-400 block mt-0.5">
+                                    使用您剛才申請的 <b>AQ. Key</b>，享有每日 500 張免費生圖額度！最適合交作業。
+                                </span>
+                            </div>
+                        </label>
+
+                        <!-- Option 2: Puter.js (Stable Diffusion) -->
+                        <label class="relative flex p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-850" id="label-puter">
+                            <div class="flex items-start h-5">
+                                <input id="engine-puter" name="image-engine" type="radio" value="puter" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 dark:border-slate-700 mt-1">
+                            </div>
+                            <div class="ml-3 text-xs">
+                                <span class="font-bold text-slate-800 dark:text-slate-100 block">
+                                    Puter.js 免費引擎 (完全免金鑰)
+                                </span>
+                                <span class="text-slate-500 dark:text-slate-400 block mt-0.5">
+                                    呼叫 Stability AI 的 Stable Diffusion 3 / XL 核心模型，不需輸入任何 Key。
+                                </span>
+                            </div>
+                        </label>
+
+                        <!-- Option 3: Pollinations.AI -->
+                        <label class="relative flex p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-850" id="label-polli">
+                            <div class="flex items-start h-5">
+                                <input id="engine-polli" name="image-engine" type="radio" value="polli" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 dark:border-slate-700 mt-1">
+                            </div>
+                            <div class="ml-3 text-xs">
+                                <span class="font-bold text-slate-800 dark:text-slate-100 block">
+                                    Pollinations AI 引擎 (免金鑰備援)
+                                </span>
+                                <span class="text-slate-500 dark:text-slate-400 block mt-0.5">
+                                    開源社群提供的 Flux / Turbo 系列模型，不需金鑰，防斷線專用。
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Gemini Key Configuration Panel -->
+                <div id="geminiKeyContainer" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 p-1.5 rounded-lg">
+                                <i class="fa-solid fa-key"></i>
+                            </span>
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">您的 Gemini API Key (AQ. 開頭)</span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        要使用極速穩定的 Gemini 2.5 官方免費引擎，請在此填入您的金鑰。系統會直接在本機發送請求給 Google，絕不洩漏。
+                    </p>
+
+                    <div class="space-y-2">
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                <i class="fa-solid fa-fingerprint text-xs"></i>
+                            </span>
+                            <input type="password" id="geminiKeyInput" 
+                                class="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-xs outline-none tracking-wider"
+                                placeholder="輸入 AQ.Ab8RN6LIA... 格式的金鑰">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced settings -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <button id="accordionHeader" class="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none">
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            高級自訂設置 (Advanced Options)
+                        </span>
+                        <i id="accordionIcon" class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-200"></i>
+                    </button>
+                    
+                    <div id="accordionContent" class="hidden px-6 pb-6 space-y-4 border-t border-slate-50 dark:border-slate-700/30 pt-4">
+                        <!-- Aspect Ratio Choice -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-2">圖片尺寸比例 (Aspect Ratio)：</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button type="button" onclick="setRatio(1024, 1024, this)" class="ratio-btn border border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 p-2.5 rounded-lg text-xs font-medium flex flex-col items-center justify-center gap-1">
+                                    <span class="w-4 h-4 border-2 border-current rounded-sm"></span>
+                                    1:1 (正方形)
+                                </button>
+                                <button type="button" onclick="setRatio(1280, 720, this)" class="ratio-btn border border-slate-200 dark:border-slate-700 p-2.5 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors flex flex-col items-center justify-center gap-1">
+                                    <span class="w-6 h-3.5 border-2 border-current rounded-sm"></span>
+                                    16:9 (寬螢幕)
+                                </button>
+                                <button type="button" onclick="setRatio(720, 1280, this)" class="ratio-btn border border-slate-200 dark:border-slate-700 p-2.5 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors flex flex-col items-center justify-center gap-1">
+                                    <span class="w-3.5 h-6 border-2 border-current rounded-sm"></span>
+                                    9:16 (直式手機)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Random Seed Control -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="block text-xs font-semibold text-slate-500">繪圖隨機種子 (Seed)：</label>
+                                <label class="flex items-center space-x-1 cursor-pointer">
+                                    <input type="checkbox" id="randomSeed" checked class="rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/30 text-[10px]">
+                                    <span class="text-[11px] text-slate-400">自動隨機</span>
+                                </label>
+                            </div>
+                            <input type="number" id="seedInput" disabled value="42"
+                                class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none text-slate-400 dark:text-slate-500"
+                                placeholder="自訂數字以獲得相同畫面">
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Right Panel: Canvas (lg:col-span-7) -->
+            <section class="lg:col-span-7">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm h-full flex flex-col justify-between min-h-[520px]">
+                    
+                    <!-- Canvas header -->
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700/50 mb-6">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping"></span>
+                            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300">即時渲染畫布 (Canvas)</h2>
+                        </div>
+                        <span id="dimensionLabel" class="text-xs text-slate-400">輸出尺寸: 1024 x 1024 px</span>
+                    </div>
+
+                    <!-- Canvas core view -->
+                    <div class="flex-grow flex items-center justify-center relative overflow-hidden rounded-xl border border-dashed border-slate-200 dark:border-slate-700 grid-bg min-h-[380px] bg-slate-50 dark:bg-slate-900/50 p-4">
+                        
+                        <!-- 1. Initial State Placeholder -->
+                        <div id="placeholderState" class="text-center space-y-4 max-w-sm">
+                            <div class="mx-auto w-16 h-16 bg-blue-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-blue-500 shadow-sm">
+                                <i class="fa-solid fa-photo-film text-2xl animate-pulse"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">準備完成，等待魔法指令</h3>
+                                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                    在左側框內輸入您的想法並選擇生圖引擎，點擊「開始生成」，高畫質 AI 畫作便會立刻在此繪製！
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 2. Loading progress states -->
+                        <div id="loadingState" class="hidden text-center space-y-6 z-10 w-full max-w-md px-6">
+                            <div class="relative w-20 h-20 mx-auto">
+                                <div class="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
+                                <div class="absolute inset-0 rounded-full border-4 border-t-blue-500 border-r-indigo-500 animate-spin"></div>
+                                <div class="absolute inset-0 flex items-center justify-center text-indigo-500">
+                                    <i class="fa-solid fa-hat-wizard text-xl animate-bounce"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <h4 id="loadingStepText" class="text-sm font-medium text-slate-700 dark:text-slate-300">正在接通 AI 繪圖伺服器...</h4>
+                                <div id="activeEngineBadge" class="inline-block px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[10px] text-slate-500"></div>
+                            </div>
+
+                            <!-- Progress percentage bar -->
+                            <div class="space-y-1.5 max-w-xs mx-auto">
+                                <div class="flex justify-between text-[10px] font-medium text-slate-400">
+                                    <span>智慧渲染進度</span>
+                                    <span id="progressBarText">0%</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                    <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300 w-0"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Image preview -->
+                        <img id="generatedImage" class="hidden max-h-full max-w-full rounded-lg shadow-xl border border-slate-200/50 dark:border-slate-700/50 object-contain z-10 transition-transform duration-300 hover:scale-[1.01]" alt="AI 產出畫面">
+
+                    </div>
+
+                    <!-- Bottom Action Controls -->
+                    <div id="actionPanel" class="hidden grid grid-cols-3 gap-3 pt-6 mt-6 border-t border-slate-100 dark:border-slate-700/50">
+                        <button onclick="downloadImage()" class="flex items-center justify-center space-x-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg shadow-md shadow-emerald-500/10 transition-colors">
+                            <i class="fa-solid fa-file-arrow-down"></i>
+                            <span>下載圖片</span>
+                        </button>
+                        <button onclick="copyImageUrl()" class="flex items-center justify-center space-x-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium text-xs rounded-lg transition-colors">
+                            <i class="fa-solid fa-copy"></i>
+                            <span>複製圖片網址</span>
+                        </button>
+                        <button id="regenerateBtn" class="flex items-center justify-center space-x-2 py-2.5 px-4 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-medium text-xs rounded-lg border border-blue-200/30 transition-colors">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>重新生成</span>
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Error Toast -->
+    <div id="errorToast" class="fixed bottom-5 right-5 transform translate-y-10 opacity-0 bg-red-500 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 transition-all duration-300 pointer-events-none z-50 max-w-sm">
+        <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+        <div class="text-xs">
+            <h5 class="font-bold">連線異常</h5>
+            <p id="errorMsg">處理您的請求時發生錯誤。</p>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div id="successToast" class="fixed bottom-5 right-5 transform translate-y-10 opacity-0 bg-emerald-500 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 transition-all duration-300 pointer-events-none z-50 max-w-sm">
+        <i class="fa-solid fa-circle-check text-lg"></i>
+        <div class="text-xs">
+            <h5 class="font-bold">繪圖成功</h5>
+            <p id="successMsg">操作已順利完成！</p>
+        </div>
+    </div>
+
+    <script>
+        // Core State
+        let width = 1024;
+        let height = 1024;
+        let currentImageSrc = "";
+        let progressInterval = null;
+
+        // UI Selectors
+        const promptInput = document.getElementById('promptInput');
+        const promptLength = document.getElementById('promptLength');
+        const generateBtn = document.getElementById('generateBtn');
+        const regenerateBtn = document.getElementById('regenerateBtn');
+        const geminiKeyInput = document.getElementById('geminiKeyInput');
+        const randomSeedCheckbox = document.getElementById('randomSeed');
+        const seedInput = document.getElementById('seedInput');
+        const dimensionLabel = document.getElementById('dimensionLabel');
+        const placeholderState = document.getElementById('placeholderState');
+        const loadingState = document.getElementById('loadingState');
+        const generatedImage = document.getElementById('generatedImage');
+        const actionPanel = document.getElementById('actionPanel');
+        const loadingStepText = document.getElementById('loadingStepText');
+        const activeEngineBadge = document.getElementById('activeEngineBadge');
+        const progressBar = document.getElementById('progressBar');
+        const progressBarText = document.getElementById('progressBarText');
+        const errorToast = document.getElementById('errorToast');
+        const errorMsg = document.getElementById('errorMsg');
+        const successToast = document.getElementById('successToast');
+        const successMsg = document.getElementById('successMsg');
+        
+        // Accordion
+        const accordionHeader = document.getElementById('accordionHeader');
+        const accordionContent = document.getElementById('accordionContent');
+        const accordionIcon = document.getElementById('accordionIcon');
+
+        // Dark/Light Theme
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+
+        // Check LocalStorage for theme preference
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            themeIcon.className = 'fa-solid fa-sun';
+        } else {
+            document.documentElement.classList.remove('dark');
+            themeIcon.className = 'fa-solid fa-moon';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                themeIcon.className = 'fa-solid fa-moon';
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                themeIcon.className = 'fa-solid fa-sun';
+                localStorage.theme = 'dark';
+            }
+        });
+
+        // Initialize key from localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const storedKey = localStorage.getItem('gemini_api_key_nano');
+            if (storedKey) {
+                geminiKeyInput.value = storedKey;
+            }
+        });
+
+        // Save key dynamically
+        geminiKeyInput.addEventListener('input', () => {
+            localStorage.setItem('gemini_api_key_nano', geminiKeyInput.value.trim());
+        });
+
+        // Prompt Length Check
+        promptInput.addEventListener('input', () => {
+            const currentLen = promptInput.value.length;
+            promptLength.textContent = `${currentLen} / 500`;
+            if (currentLen > 500) {
+                promptInput.value = promptInput.value.substring(0, 500);
+            }
+        });
+
+        // Radio engine card visual styling updates
+        const engines = ['gemini', 'puter', 'polli'];
+        engines.forEach(eng => {
+            document.getElementById(`engine-${eng}`).addEventListener('change', () => {
+                engines.forEach(e => {
+                    const label = document.getElementById(`label-${e}`);
+                    if (e === eng) {
+                        label.className = "relative flex p-3.5 rounded-xl border border-blue-500 bg-blue-50/20 dark:bg-blue-950/20 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-850";
+                    } else {
+                        label.className = "relative flex p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-850";
+                    }
+                });
+            });
+        });
+
+        // Accordion open/close
+        accordionHeader.addEventListener('click', () => {
+            const isHidden = accordionContent.classList.contains('hidden');
+            if (isHidden) {
+                accordionContent.classList.remove('hidden');
+                accordionIcon.style.transform = 'rotate(180deg)';
+            } else {
+                accordionContent.classList.add('hidden');
+                accordionIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Seed controls toggle
+        randomSeedCheckbox.addEventListener('change', () => {
+            if (randomSeedCheckbox.checked) {
+                seedInput.disabled = true;
+                seedInput.classList.add('bg-slate-100', 'dark:bg-slate-950', 'text-slate-400', 'dark:text-slate-500');
+            } else {
+                seedInput.disabled = false;
+                seedInput.classList.remove('bg-slate-100', 'dark:bg-slate-950', 'text-slate-400', 'dark:text-slate-500');
+            }
+        });
+
+        // Set Presets
+        function setRatio(w, h, buttonEl) {
+            width = w;
+            height = h;
+            dimensionLabel.textContent = `輸出尺寸: ${w} x ${h} px`;
+            
+            document.querySelectorAll('.ratio-btn').forEach(btn => {
+                btn.className = "ratio-btn border border-slate-200 dark:border-slate-700 p-2.5 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors flex flex-col items-center justify-center gap-1";
+            });
+            
+            buttonEl.className = "ratio-btn border border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 p-2.5 rounded-lg text-xs font-medium flex flex-col items-center justify-center gap-1";
+        }
+
+        // Apply suggestion
+        function useTemplate(text) {
+            promptInput.value = text;
+            promptLength.textContent = `${text.length} / 500`;
+        }
+
+        // Toasts
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorToast.classList.remove('opacity-0', 'translate-y-10');
+            errorToast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                errorToast.classList.remove('opacity-100', 'translate-y-0');
+                errorToast.classList.add('opacity-0', 'translate-y-10');
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            successMsg.textContent = message;
+            successToast.classList.remove('opacity-0', 'translate-y-10');
+            successToast.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => {
+                successToast.classList.remove('opacity-100', 'translate-y-0');
+                successToast.classList.add('opacity-0', 'translate-y-10');
+            }, 3000);
+        }
+
+        // Simulated progress bar animation
+        function updateProgress(value) {
+            progressBar.style.width = `${value}%`;
+            progressBarText.textContent = `${value}%`;
+        }
+
+        function startSimulatedProgress(startVal, endVal = 95, speed = 250) {
+            let current = startVal;
+            clearInterval(progressInterval);
+            progressInterval = setInterval(() => {
+                if (current < endVal) {
+                    current += Math.floor(Math.random() * 4) + 1;
+                    if (current > endVal) current = endVal;
+                    updateProgress(current);
+                    
+                    // Dynamic texts
+                    if (current > 30 && current <= 60) {
+                        loadingStepText.textContent = "🎨 正在擴散像素微粒與光影特徵...";
+                    } else if (current > 60 && current <= 85) {
+                        loadingStepText.textContent = "🌈 正在進行高解析度畫面細節打光...";
+                    } else if (current > 85) {
+                        loadingStepText.textContent = "✨ 正在做最後的一鍵優化與色彩校正...";
+                    }
+                }
+            }, speed);
+        }
+
+        // --- ENGINE 1: Google Gemini 2.5 Flash Image Preview (Nano Banana) ---
+        async function generateWithGemini(prompt, apiKey) {
+            loadingStepText.textContent = "⚡️ 正在連線 Google Cloud 官方生圖端點...";
+            activeEngineBadge.textContent = "使用引擎: Gemini 2.5 Flash Image";
+            updateProgress(15);
+            startSimulatedProgress(15, 92, 180);
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                }
+            };
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const errMessage = errData.error?.message || `HTTP狀態碼 ${response.status}`;
+                throw new Error(errMessage);
+            }
+
+            const data = await response.json();
+            const part = data?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+            
+            if (!part || !part.inlineData?.data) {
+                throw new Error("回傳中不包含有效的圖片 Base64 數據。");
+            }
+
+            const mimeType = part.inlineData.mimeType || 'image/png';
+            const base64Data = part.inlineData.data;
+            return `data:${mimeType};base64,${base64Data}`;
+        }
+
+        // --- ENGINE 2: Puter.js (Stable Diffusion XL / 3) ---
+        async function generateWithPuter(prompt) {
+            if (typeof puter === 'undefined') {
+                throw new Error("Puter.js 雲端引擎尚未載入完成，請稍候。");
+            }
+            loadingStepText.textContent = "🔌 正在透過 Puter.js 發送生圖請求 (Stable Diffusion)...";
+            activeEngineBadge.textContent = "使用引擎: Puter.js (SD-XL)";
+            updateProgress(20);
+            startSimulatedProgress(20, 95, 200);
+
+            // Execute Puter Free text-to-image API
+            const resultElement = await puter.ai.txt2img(prompt, { 
+                model: "stabilityai/stable-diffusion-xl-base-1.0" 
+            });
+
+            if (resultElement && resultElement.src) {
+                return resultElement.src;
+            } else {
+                throw new Error("Puter 雲端渲染未成功返回圖片標籤。");
+            }
+        }
+
+        // --- ENGINE 3: Pollinations.AI ---
+        async function generateWithPollinations(prompt) {
+            loadingStepText.textContent = "🌍 正在連線 Pollinations 備援生圖伺服器...";
+            activeEngineBadge.textContent = "使用引擎: Pollinations (Flux-Schnell)";
+            updateProgress(10);
+            startSimulatedProgress(10, 85, 120);
+
+            const activeSeed = randomSeedCheckbox.checked ? Math.floor(Math.random() * 999999) : parseInt(seedInput.value) || 42;
+            const encodedPrompt = encodeURIComponent(prompt);
+            const imageUrl = `https://image.pollinations.ai/p/${encodedPrompt}?width=${width}&height=${height}&seed=${activeSeed}&model=flux&nologo=true`;
+
+            // Bypassing fetch CORS error - Load image using native browser Image loader
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(imageUrl);
+                img.onerror = () => reject(new Error("Pollinations 圖片載入超時或伺服器無回應。"));
+                // Add short timeout
+                setTimeout(() => reject(new Error("連線逾時")), 20000);
+                img.src = imageUrl;
+            });
+        }
+
+        // --- Main controller with Intelligent Auto-Failover ---
+        async function runImageGeneration() {
+            const rawPrompt = promptInput.value.trim();
+            if (!rawPrompt) {
+                showError("請先輸入一些提示詞，讓 AI 了解您的創意想法！");
+                return;
+            }
+
+            // Adjust Canvas states
+            placeholderState.classList.add('hidden');
+            generatedImage.classList.add('hidden');
+            actionPanel.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            
+            updateProgress(0);
+            loadingStepText.textContent = "🔮 正在發動魔法陣並準備核心...";
+            activeEngineBadge.textContent = "正在選擇最佳引擎...";
+
+            // Find selected radio
+            const selectedEngine = document.querySelector('input[name="image-engine"]:checked').value;
+            const apiKey = geminiKeyInput.value.trim();
+
+            let finalImageResult = null;
+
+            try {
+                // If Gemini is selected but NO key is provided, automatically redirect
+                if (selectedEngine === 'gemini' && !apiKey) {
+                    showError("偵測到您選擇了 Gemini 2.5 官方引擎，但尚未貼上您的 AQ. Key！系統已自動幫您切換至【免金鑰 Puter.js 引擎】進行產圖。");
+                    document.getElementById('engine-puter').checked = true;
+                    document.getElementById('engine-puter').dispatchEvent(new Event('change'));
+                    
+                    // Run with Puter
+                    finalImageResult = await generateWithPuter(rawPrompt);
+                } 
+                else if (selectedEngine === 'gemini') {
+                    // Try Gemini 2.5
+                    finalImageResult = await generateWithGemini(rawPrompt, apiKey);
+                } 
+                else if (selectedEngine === 'puter') {
+                    // Try Puter
+                    finalImageResult = await generateWithPuter(rawPrompt);
+                } 
+                else {
+                    // Try Pollinations
+                    finalImageResult = await generateWithPollinations(rawPrompt);
+                }
+
+            } catch (firstError) {
+                // AUTO FAILOVER MODE! If first choice fails, we automatically try fallback
+                console.warn("首選引擎出錯，啟動自動容錯：", firstError);
+                loadingStepText.textContent = "⚠️ 原引擎連線不穩，系統正無感切換至備用免費引擎產圖...";
+                
+                try {
+                    // If we tried Gemini or Puter and it failed, we use Pollinations.AI as ultimate backup
+                    if (selectedEngine === 'polli') {
+                        // If pollinations failed, try Puter
+                        finalImageResult = await generateWithPuter(rawPrompt);
+                    } else {
+                        // General fallback to Pollinations.AI
+                        finalImageResult = await generateWithPollinations(rawPrompt);
+                    }
+                } catch (secondError) {
+                    // Ultimate fail
+                    console.error("所有備用生圖引擎均嘗試失敗：", secondError);
+                    clearInterval(progressInterval);
+                    loadingState.classList.add('hidden');
+                    placeholderState.classList.remove('hidden');
+                    showError(`生圖失敗：由於目前全網 AI 節點流量過載（${secondError.message}），請您稍候 5 秒鐘再點擊一次重新生成！`);
+                    return;
+                }
+            }
+
+            // SUCCESS RENDERING STATE
+            if (finalImageResult) {
+                clearInterval(progressInterval);
+                updateProgress(100);
+                loadingStepText.textContent = "🎉 圖片已全部渲染完成！";
+                
+                setTimeout(() => {
+                    loadingState.classList.add('hidden');
+                    generatedImage.src = finalImageResult;
+                    generatedImage.classList.remove('hidden');
+                    actionPanel.classList.remove('hidden');
+                    currentImageSrc = finalImageResult;
+                    showSuccess("生圖大成功！您可以點選下方下載保留成果。");
+                }, 400);
+            }
+        }
+
+        // Action bindings
+        generateBtn.addEventListener('click', runImageGeneration);
+        regenerateBtn.addEventListener('click', runImageGeneration);
+
+        // Download Action
+        async function downloadImage() {
+            if (!currentImageSrc) return;
+            
+            try {
+                // If base64 data, directly create a link and download
+                if (currentImageSrc.startsWith('data:')) {
+                    const link = document.createElement('a');
+                    link.href = currentImageSrc;
+                    link.download = `ai-image-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showSuccess("已在您的電腦/手機中啟動下載！");
+                } else {
+                    // Pollinations remote URL
+                    const response = await fetch(currentImageSrc);
+                    const blob = await response.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = `ai-image-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(blobUrl);
+                    showSuccess("高解析圖片下載成功！");
+                }
+            } catch (e) {
+                // Direct fallback
+                window.open(currentImageSrc, '_blank');
+                showSuccess("已在新分頁中為您開啟大圖，請點右鍵或長按選擇「儲存圖片」即可！");
+            }
+        }
+
+        // Copy raw output link
+        function copyImageUrl() {
+            if (!currentImageSrc) return;
+            
+            const tempInput = document.createElement('input');
+            tempInput.value = currentImageSrc;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            showSuccess("圖片連結已成功複製至剪貼簿！");
+        }
+    </script>
+</body>
+</html>
