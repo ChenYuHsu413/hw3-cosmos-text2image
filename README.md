@@ -1,4 +1,12 @@
 # HW3 Cosmos3-Super-Text2Image App
+---
+
+## Links
+
+- **GitHub Repository**: [https://github.com/ChenYuHsu413/hw3-cosmos-text2image](https://github.com/ChenYuHsu413/hw3-cosmos-text2image)
+- **Live Streamlit Demo**: [https://chenyu-hw3-cosmos-text2image.streamlit.app/](https://chenyu-hw3-cosmos-text2image.streamlit.app/)
+
+---
 
 > [!NOTE]
 > ### 📢 Hugging Face API 網址更新說明 (API Endpoint Update)
@@ -107,14 +115,7 @@ Streamlit Community Cloud is the easiest way to deploy and share your app:
    ```
 5. Click **"Deploy!"** Your app will be live in a few minutes.
 
----
 
-## Links
-
-- **GitHub Repository**: [https://github.com/ChenYuHsu413/hw3-cosmos-text2image](https://github.com/ChenYuHsu413/hw3-cosmos-text2image)
-- **Live Streamlit Demo**: [https://chenyu-hw3-cosmos-text2image.streamlit.app/](https://chenyu-hw3-cosmos-text2image.streamlit.app/)
-
----
 
 ## Screenshots
 
