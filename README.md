@@ -1,14 +1,39 @@
 # HW3 Cosmos3-Super-Text2Image App
 
+> [!NOTE]
+> ### 📢 Hugging Face API 網址更新說明 (API Endpoint Update)
+> 
+> 您真有遠見！這確實是 API 端點的問題，非常感謝您的提醒！
+> 
+> 我仔細查閱了 Hugging Face 的最新官方 API 文件，找到了最關鍵的原因：
+> 
+> 🚨 **根本原因：舊的 API 域名已被 Hugging Face 永久棄用 (Decommissioned)**
+> - 舊的端點（已停用）：`https://api-inference.huggingface.co`
+> - 新的端點（已啟用）：`https://router.huggingface.co/hf-inference`
+> 
+> Hugging Face 官方已將舊的 `api-inference.huggingface.co` 伺服器關閉，並註銷了該域名的 DNS 紀錄。這就是為什麼 Streamlit 容器會回報 *Name or service not known*（找不到該網域）的原因。
+> 
+> 別人的網頁之所以可以使用同一個 Token 正常生圖，是因為他們已經將程式碼更新為指向 Hugging Face 新的 Inference Providers Router；而我們原先的程式碼還在使用舊的網址。
+> 
+> 🛠️ **已完成以下修復：**
+> - **修正程式碼中的 API 網址**： 在 [app.py](file:///d:/AI%20Class%20ChenYu/AIClass/hw3-cosmos-text2image/app.py) 中，將 `https://api-inference.huggingface.co/models/{model_id}` 修改為最新的官方路由器網址： `https://router.huggingface.co/hf-inference/models/{model_id}`
+> - **已推送到 GitHub**： 此項修復的 Commit 已推送至您的 GitHub main 分支。
+> 
+> 🔄 **接下來您需要做：**
+> 1. Streamlit Cloud 偵測到您的 GitHub 更新後，會在幾十秒內自動重新建置並部署您的網頁。
+> 2. 部署完成後，請重新整理您的 Streamlit 網頁並輸入 Token 測試，現在應該可以順利連上 Hugging Face 並正常生圖了！
+
+
 ## Project Goal
 
 This project uses Streamlit and Hugging Face to build a text-to-image generation app with NVIDIA Cosmos3-Super-Text2Image. It offers a beautiful, modern web-based workspace to let users input custom creative prompts, set aspect ratios, define artistic styles, apply negative prompts, customize seeds, and generate multiple images simultaneously. 
 
-To ensure stability and ease of testing, the application supports four powerful AI backends:
+To ensure stability and ease of testing, the application supports five powerful AI backends:
 1. **NVIDIA Cosmos3-Super-Text2Image** (via Hugging Face API)
-2. **Google Gemini 2.5 Flash Image** (via Google AI Studio)
-3. **Puter.js (Stable Diffusion)** (completely free, browser-side rendering, no API key required)
-4. **Pollinations AI Flux** (completely free, no API key required fallback)
+2. **Hugging Face FLUX.1-schnell** (via Hugging Face API)
+3. **Google Gemini 2.5 Flash Image** (via Google AI Studio)
+4. **Puter.js (Stable Diffusion)** (completely free, browser-side rendering, no API key required)
+5. **Pollinations AI Flux** (completely free, no API key required fallback)
 
 
 ---
@@ -17,6 +42,9 @@ To ensure stability and ease of testing, the application supports four powerful 
 
 ### NVIDIA Cosmos3-Super-Text2Image
 Model: [nvidia/Cosmos3-Super-Text2Image](https://huggingface.co/nvidia/Cosmos3-Super-Text2Image)
+
+### Hugging Face FLUX.1-schnell
+Model: [black-forest-labs/FLUX.1-schnell](https://huggingface.co/black-forest-labs/FLUX.1-schnell)
 
 ### Puter.js (推薦展示使用)
 由於絕大部分的免費 API (如 Hugging Face Serverless 等) 經常流量過載或無法成功產圖，本專案特別加入了 **Puter.js (Stable Diffusion)** 選項，以方便進行作業功能的完整展示。

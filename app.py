@@ -159,9 +159,9 @@ def get_api_token(secret_key, env_key):
     return None
 
 
-def generate_huggingface_image(prompt, negative_prompt, style_desc, aspect_ratio_dims, seed, token):
-    """Call Hugging Face Inference API for nvidia/Cosmos3-Super-Text2Image."""
-    API_URL = "https://api-inference.huggingface.co/models/nvidia/Cosmos3-Super-Text2Image"
+def generate_huggingface_image(prompt, negative_prompt, style_desc, aspect_ratio_dims, seed, token, model_id="nvidia/Cosmos3-Super-Text2Image"):
+    """Call Hugging Face Inference API for the selected model."""
+    API_URL = f"https://router.huggingface.co/hf-inference/models/{model_id}"
     headers = {"Authorization": f"Bearer {token}"}
     
     # Formulate prompt including image style
@@ -308,11 +308,12 @@ with col_left:
         label="選擇欲使用的後端 AI 模型：",
         options=[
             "nvidia/Cosmos3-Super-Text2Image (Hugging Face)",
+            "black-forest-labs/FLUX.1-schnell (Hugging Face)",
             "Gemini 2.5 Flash Image (Google API)",
             "Puter.js (Stable Diffusion - 完全免金鑰)",
             "Pollinations AI (Flux - 完全免金鑰)"
         ],
-        index=2,  # Default to Puter.js as suggested by the user
+        index=3,  # Default to Puter.js as suggested by the user
         label_visibility="collapsed"
     )
     
@@ -320,7 +321,7 @@ with col_left:
     hf_token = None
     gemini_key = None
     
-    if "Cosmos3" in engine_choice:
+    if "Hugging Face" in engine_choice:
         hf_token = get_api_token("HF_TOKEN", "HF_TOKEN")
         if not hf_token:
             st.info("💡 提示：未在 Streamlit secrets 或 .env 中檢測到金鑰。請於下方手動輸入。")
@@ -484,7 +485,7 @@ with col_right:
             st.session_state["generation_trigger"] = False
         else:
             can_proceed = True
-            if "Cosmos3" in active_engine and not hf_token_val:
+            if "Hugging Face" in active_engine and not hf_token_val:
                 st.error("❌ 錯誤：使用 Hugging Face 模型需要填入 API Token！請在左側 Token 輸入框中貼上您的金鑰。")
                 can_proceed = False
             elif "Gemini" in active_engine and not gemini_key_val:
@@ -635,7 +636,12 @@ with col_right:
                         components.html(puter_html, height=520, scrolling=True)
                 else:
                     st.toast("🔮 正在發送請求至繪圖伺服器...", icon="🚀")
-                    with st.spinner("✨ 魔法繪製中，請稍候... (Cosmos3 首次加載可能需要 1~2 分鐘)"):
+                    spinner_msg = "✨ 魔法繪製中，請稍候..."
+                    if "Cosmos3" in active_engine:
+                        spinner_msg += " (Cosmos3 首次載入可能需要 1~2 分鐘)"
+                    elif "FLUX" in active_engine:
+                        spinner_msg += " (Flux 首次載入可能需要 1~2 分鐘)"
+                    with st.spinner(spinner_msg):
                         try:
                             images_result = []
                             start_time = time.time()
@@ -643,8 +649,9 @@ with col_right:
                             for i in range(num_images_val):
                                 current_seed = seed_val + i if not is_random_seed_val else (seed_val + i * 137) % 1000000
                                 
-                                if "Cosmos3" in active_engine:
-                                    img = generate_huggingface_image(prompt_val, negative_prompt_val, style_desc_val, dims_val, current_seed, hf_token_val)
+                                if "Hugging Face" in active_engine:
+                                    model_id = active_engine.split(" (")[0]
+                                    img = generate_huggingface_image(prompt_val, negative_prompt_val, style_desc_val, dims_val, current_seed, hf_token_val, model_id=model_id)
                                 elif "Gemini" in active_engine:
                                     img = generate_gemini_image(prompt_val, style_desc_val, gemini_key_val)
                                 else:
